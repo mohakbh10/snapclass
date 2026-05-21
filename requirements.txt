@@ -1,0 +1,17 @@
+numpy
+pandas
+
+#face recognition
+scikit-learn
+dlib-bin
+
+git+https://github.com/ageitgey/face_recognition_models     #face vector points
+setuptools<70.0.0
+
+supabase
+bcrypt
+
+sego #qrcode
+pillow #image preprocessing help
+
+streamlit
