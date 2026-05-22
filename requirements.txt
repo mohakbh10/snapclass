@@ -15,3 +15,6 @@ bcrypt
 pillow #image preprocessing help
 
 streamlit
+
+librosa #audio processing
+resemblyzer #voice embedding
