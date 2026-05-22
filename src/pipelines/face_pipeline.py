@@ -65,7 +65,7 @@ def get_trained_model():
         embedding = student.get('face_embedding')
         if embedding: # Check if the student has a face embedding stored in the database
             X.append(np.array(embedding)) # Append the face embedding to the list of embeddings
-            y.append(student.get('id')) # Append the corresponding student ID to the list of labels
+            y.append(student.get('student_id')) # Append the corresponding student ID to the list of labels
 
     if len(X) == 0:
         return 0
@@ -109,7 +109,7 @@ def predict_attendance(class_image_np):
         if len(all_students) >=2:
             predicted_id = int (clf.predict([encoding])[0]) # Predict the student ID for the input face embedding using the trained SVM model
         else:
-            predicted = int(all_students[0]) # If there is only one student in the training data, we can directly assign the predicted student ID to that student without using the SVM model for prediction since there is no other class to compare against.
+            predicted_id = int(all_students[0]) # If there is only one student in the training data, we can directly assign the predicted student ID to that student without using the SVM model for prediction since there is no other class to compare against.
 
         student_embedding = X_train [y_train.index(predicted_id)] # Get the face embedding for the predicted student ID from the training data
         best_match_score = np.linalg.norm(student_embedding - encoding) # Calculate the Euclidean distance between the input face embedding and the face embedding of the predicted student to get a match score (lower score indicates a better match)
