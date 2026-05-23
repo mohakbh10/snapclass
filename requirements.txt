@@ -11,7 +11,7 @@ setuptools<70.0.0
 supabase
 bcrypt
 
-#sego #qrcode
+segno #qrcode
 pillow #image preprocessing help
 
 streamlit
