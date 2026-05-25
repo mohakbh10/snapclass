@@ -104,3 +104,13 @@ def get_student_attendance(student_id):
     #eq sql query: SELECT * FROM attendance_logs JOIN subjects ON attendance_logs.subject_id = subjects.subject_id WHERE attendance_logs.student_id = student_id
     response = supabase.table('attendance_logs').select('*, subjects(*)').eq('student_id', student_id).execute()
     return response.data
+
+def create_attendance(logs):
+    #logs is a list of dicts with keys student_id, subject_id, timestamp, method
+    response = supabase.table("attendance_logs").insert(logs).execute()
+    return response.data
+
+def get_attendance_for_teacher(teacher_id):
+    #eq sql query: SELECT * FROM attendance_logs JOIN subjects ON attendance_logs.subject_id = subjects.subject_id WHERE subjects.teacher_id = teacher_id
+    response = supabase.table('attendance_logs').select('*, subjects!inner(*)').eq('subjects.teacher_id', teacher_id).execute()
+    return response.data

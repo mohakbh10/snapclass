@@ -1,3 +1,4 @@
+streamlit
 numpy
 pandas
 
@@ -14,7 +15,6 @@ bcrypt
 segno #qrcode
 pillow #image preprocessing help
 
-streamlit
 
 librosa #audio processing
 resemblyzer #voice embedding

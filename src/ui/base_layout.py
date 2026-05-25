@@ -36,14 +36,14 @@ def style_base_layout():
     @import url('https://fonts.googleapis.com/css2?family=Climate+Crisis:YEAR@1979&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');            
     @import url('https://fonts.googleapis.com/css2?family=Climate+Crisis:YEAR@1979&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Outfit:wght@100..900&display=swap');
                 
-        /* Hide top bar of default Streamlit layout 
+        /* Hide top bar of default Streamlit layout */
             #MainMenu, footer, header {
                 visibility: hidden;
             }
                 
             .block-container {
                 padding-top: 0.5rem !important;
-            } */
+            }
                 
             h1{
                 font-family: 'Climate Crisis', sans-serif !important;

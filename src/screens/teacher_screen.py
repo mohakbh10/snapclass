@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.components.dialog_attendance_results import attendance_result_dialog
 from src.components.dialog_add_photo import add_photos_dialog
 from src.components.dialog_create_subject import create_subject_dialog
 from src.ui.base_layout import style_background_dashboard, style_base_layout
@@ -7,15 +8,19 @@ from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from src.components.subject_card import subject_card
 from src.components.dialog_share_subject import share_subject_dialog
-from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects
+from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects, get_attendance_for_teacher
 from src.components.footer import footer_dashboard
 
 from src.pipelines.face_pipeline import predict_attendance
 import numpy as np
 from src.database.config import supabase
+from datetime import datetime
+
+from src.components.dialog_voice_attendance import voice_attendance_dialog
+
+import pandas as pd
 
 def teacher_screen():
-
     style_background_dashboard()
     style_base_layout()
     if "teacher_data" in st.session_state:
@@ -105,7 +110,7 @@ def teacher_tab_take_attendance():
 
     subject_options = {f"{s['name']} - {s['subject_code']}": s['subject_id'] for s in subjects}
 
-    col1, col2 = st.columns([3,1])
+    col1, col2 = st.columns([3,1], vertical_alignment='bottom')
 
     with col1:
         selected_subject_label = st.selectbox('Select Subject', options=list(subject_options.keys()))
@@ -125,7 +130,9 @@ def teacher_tab_take_attendance():
         for idx, img in enumerate(st.session_state.attendance_images):
             with gallery_cols[idx % 4 ]:
                 st.image(img, width='stretch', caption=f'Photo {idx+1}')
+
     has_photos = bool(st.session_state.attendance_images)
+
     c1, c2, c3 = st.columns(3)
 
     with c1:
@@ -153,6 +160,41 @@ def teacher_tab_take_attendance():
 
                 enrolled_res = supabase.table('subject_students').select("*, students(*)").eq('subject_id',selected_subject_id ).execute()
                 enrolled_students = enrolled_res.data
+
+                if not enrolled_students:
+                    st.warning('No students enrolled in this course')
+
+                else:
+                    results, attendance_to_log = [], []
+
+                    current_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+                    for node in enrolled_students:
+                        student = node['students']
+                        sources = all_detected_ids.get(int(student['student_id']), [])
+                        is_present = len(sources) > 0
+
+                        results.append({
+                            "Name": student['name'],
+                            "ID": student['student_id'],
+                            "Source": ", ".join(sources) if is_present else "--",
+                            "Status": "✅ Present" if is_present else "❌ Absent"
+                        })
+
+                        attendance_to_log.append({
+                            'student_id': student['student_id'],
+                            'subject_id': selected_subject_id,
+                            'timestamp': current_timestamp,
+                            'is_present': bool(is_present)
+                        })
+
+                attendance_result_dialog(pd.DataFrame(results), attendance_to_log)
+    with c3:
+        if st.button('Use Voice Attendance', type='primary', width='stretch', icon=':material/mic:'):
+            voice_attendance_dialog(selected_subject_id)
+
+
+
 
 def teacher_tab_manage_subjects():
     teacher_id = st.session_state.teacher_data['teacher_id']
@@ -192,10 +234,54 @@ def teacher_tab_manage_subjects():
 
     else:
         st.info("NO SUBJECTS FOUND. CREATE ONE ABOVE")            
-
 def teacher_tab_attendance_records():
-    st.header("Attendance Records", text_alignment='center')
-    st.info("This feature is coming soon! Stay tuned for updates.", icon="⏳")
+    st.header('Attendance Records')
+
+    teacher_id = st.session_state.teacher_data['teacher_id']
+
+    records = get_attendance_for_teacher(teacher_id)
+
+    if not records:
+        return
+    
+    data = []
+
+    for r in records:
+        ts = r.get('timestamp')
+
+        data.append({
+            "ts_group": ts.split(".")[0] if ts else None, #grouping timestamp by second to aggregate attendance records for the same class session together, since multiple students will have the same timestamp for a given attendance session, we can use this to group them together and display attendance stats for each session
+            "Time": datetime.fromisoformat(ts).strftime("%Y-%m-%d %I:%M %p") if ts else "N'A", #formatting the timestamp into a more readable format for display purposes, showing date and time in 12-hour format with AM/PM
+            "Subject": r['subjects']['name'], #displaying the subject name associated with each attendance record for better readability, instead of just showing subject_id, we can show the actual name of the subject which is more meaningful to the teacher when reviewing attendance records
+            "Subject Code":r['subjects']['subject_code'], #including the subject code in the attendance records display to provide additional context and make it easier for teachers to quickly identify which subject the attendance record belongs to, especially if they have multiple subjects with similar names. This allows for better organization and clarity when reviewing past attendance sessions.
+            "is_present": bool(r.get('is_present', False)) #indicating whether the student was marked as present or absent in each attendance record, this will be used to calculate attendance statistics such as total students present and total students absent for each class session when we group the records together
+        }) #summary- group records by timestamp, subject, and subject code, and count how many students were present in each group. This will allow us to display attendance stats for each class session
+
+
+    df = pd.DataFrame(data)
+
+
+
+    summary = (
+        df.groupby(['ts_group', 'Time', 'Subject', 'Subject Code'])
+        .agg(
+            Present_Count = ('is_present', 'sum'), #counting the number of students marked as present in each group to calculate the total number of students present for each class session, this is done by summing the boolean values in the 'is_present' column where True is treated as 1 and False is treated as 0, so we get a count of how many students were present in each session
+            Total_Count =('is_present', 'count') #counting the total number of attendance records in each group to calculate the total number of students for each class session, this is done by counting the number of entries in the 'is_present' column for each group, which gives us the total number of students that were marked as either present or absent in each session. This is important for calculating attendance percentages and understanding overall attendance for each class session
+        ).reset_index()
+
+    )
+
+    summary['Attendance Stats'] = (
+        "✅ " + summary['Present_Count'].astype(str) + " /" #creating a new column 'Attendance Stats' in the summary dataframe to display the attendance statistics for each class session in a more readable format, showing the number of students present out of the total number of students for each session, this is done by concatenating the 'Present_Count' and 'Total_Count' values into a string format like "✅ 15 / 20 Students" which indicates that 15 out of 20 students were present in that session, providing a quick visual representation of attendance for each class session when reviewing past records
+        + summary['Total_Count'].astype(str) + ' Students' #final format of the 'Attendance Stats' column will look like "✅ 15 / 20 Students" which indicates that 15 out of 20 students were present in that session, providing a quick visual representation of attendance for each class session when reviewing past records
+    )
+
+    display_df = ( summary.sort_values(by='ts_group' ,ascending=False)
+                    [['Time', 'Subject', 'Subject Code', 'Attendance Stats']]
+                )
+    #displaying the attendance records in a table format sorted by timestamp in descending order to show the most recent attendance sessions at the top, and only showing relevant columns such as Time, Subject, Subject Code, and Attendance Stats for better readability and easier review of past attendance records by the teacher. This allows teachers to quickly scan through their attendance history and see how each class session's attendance was without being overwhelmed by too much information.
+    
+    st.dataframe(display_df, width='stretch', hide_index=True)
 
 
 def login_teacher(username, password):
