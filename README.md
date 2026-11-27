@@ -183,3 +183,7 @@ These checks do not connect to Supabase, exercise camera/microphone devices, val
 The repository implements a Streamlit application connecting teacher/student workflows, Supabase persistence, bcrypt password hashing, face embeddings/classification, voice embeddings, and attendance review. The commit history records these features being added over time. This description sticks to work visible in the code and does not claim independent validation of the recognition models or production deployment.
 
 Working through this codebase demonstrates practical integration lessons: keep query parameter contracts consistent across QR generation and routing; treat biometric matches as fallible proposals; enforce uniqueness and authorization in the database rather than relying only on UI checks; and document inferred schema and limits clearly when migrations and automated accuracy measurements are absent.
+
+## About the Developer
+
+**Mohak Bhattacharya** — **B.Tech, Computer Science and Engineering**, **Kalinga Institute of Industrial Technology (KIIT), Bhubaneswar, India**. SnapClass is a project exploring automated attendance management, computer vision, voice-based recognition, and Streamlit application development.
