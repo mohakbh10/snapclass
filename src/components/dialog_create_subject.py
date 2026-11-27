@@ -29,9 +29,8 @@ def create_subject_dialog(teacher_id):
 
                 st.rerun()
 
-            except Exception as e:
-
-                st.error(f"Error: {str(e)}")
+            except Exception:
+                st.error("Could not create the subject. Check its code and try again.")
 
         else:
 

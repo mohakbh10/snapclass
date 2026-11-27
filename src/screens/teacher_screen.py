@@ -8,8 +8,12 @@ from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from src.components.subject_card import subject_card
 from src.components.dialog_share_subject import share_subject_dialog
-from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects, get_attendance_for_teacher
-from src.components.footer import footer_dashboard
+from src.database.db import (
+    check_teacher_exists,
+    teacher_login,
+    get_teacher_subjects,
+    get_attendance_for_teacher,
+)
 
 from src.pipelines.face_pipeline import predict_attendance
 import numpy as np
@@ -17,6 +21,7 @@ from src.database.config import supabase
 from datetime import datetime
 
 from src.components.dialog_voice_attendance import voice_attendance_dialog
+from src.session_state import clear_attendance_state, clear_user_state, clear_voice_attendance_state
 
 import pandas as pd
 
@@ -42,8 +47,7 @@ def teacher_dashboard():
         st.subheader("Welcome, " + teacher_data['name'] + "!", text_alignment='center')
 
         if st.button("Logout",type='secondary',key='loginbackbtn',shortcut="ctrl+backspace",):
-            st.session_state['is_logged_in'] = False
-            del st.session_state.teacher_data
+            clear_user_state(st.session_state)
             st.rerun()
 
     st.space()
@@ -120,6 +124,9 @@ def teacher_tab_take_attendance():
             add_photos_dialog()
 
     selected_subject_id = subject_options[selected_subject_label]
+    if st.session_state.get('attendance_subject_id') != selected_subject_id:
+        clear_attendance_state(st.session_state)
+        st.session_state['attendance_subject_id'] = selected_subject_id
 
     st.divider()
 
@@ -163,6 +170,7 @@ def teacher_tab_take_attendance():
 
                 if not enrolled_students:
                     st.warning('No students enrolled in this course')
+                    return
 
                 else:
                     results, attendance_to_log = [], []
@@ -191,6 +199,7 @@ def teacher_tab_take_attendance():
                 attendance_result_dialog(pd.DataFrame(results), attendance_to_log)
     with c3:
         if st.button('Use Voice Attendance', type='primary', width='stretch', icon=':material/mic:'):
+            clear_voice_attendance_state(st.session_state)
             voice_attendance_dialog(selected_subject_id)
 
 
@@ -360,8 +369,8 @@ def register_teacher(teacher_username, teacher_name, teacher_pass, teacher_pass_
     try:
         create_teacher(teacher_username, teacher_pass, teacher_name)
         return True, "Teacher registered successfully, please login now"
-    except Exception as e:
-        return False, f"An error occurred: {str(e)}"
+    except Exception:
+        return False, "Registration could not be completed. Try again or choose another username."
 
 def teacher_screen_register():
 

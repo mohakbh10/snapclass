@@ -11,8 +11,9 @@ from PIL import Image
 import numpy as np
 from src.pipelines.face_pipeline import predict_attendance, get_face_embedding, train_classifier
 from src.pipelines.voice_pipeline import get_voice_embedding
-from src.database.db import get_all_students, create_student, get_student_subjects, get_student_attendance, unenroll_student_to_subject,enroll_student_to_subject
+from src.database.db import get_all_students, create_student, get_student_subjects, get_student_attendance, unenroll_student_to_subject
 from src.components.subject_card import subject_card
+from src.session_state import clear_user_state
 
 
 def student_dashboard():
@@ -27,8 +28,7 @@ def student_dashboard():
         st.subheader(f"""Welcome, {student_data['name']} """)
 
         if st.button("Logout", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
-            st.session_state['is_logged_in'] = False
-            del st.session_state.student_data
+            clear_user_state(st.session_state)
             st.rerun()
 
     st.space()

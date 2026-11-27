@@ -2,11 +2,19 @@ import streamlit as st
 
 import segno
 import io
+from urllib.parse import urlencode
+
+
+APP_URL = "https://snapclass-bymohak.streamlit.app/"
+
+
+def build_join_url(subject_code, app_url=APP_URL):
+    """Build the root Streamlit URL understood by app.py."""
+    return f"{app_url}?{urlencode({'join-code': str(subject_code)})}"
 
 @st.dialog("Share Class Link")
 def share_subject_dialog(subject_name, subject_code):
-    app_domain = "snapclass-bymohak.streamlit.app"
-    join_url = f"{app_domain}/join?code={subject_code}"
+    join_url = build_join_url(subject_code)
 
     st.header ("Scan to Join")
 

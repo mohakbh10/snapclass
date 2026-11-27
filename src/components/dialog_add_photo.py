@@ -1,8 +1,5 @@
 import streamlit as st
-from src.database.db import enroll_student_to_subject
-from src.database.config import supabase
 from PIL import Image
-import time
 
 
 @st.dialog("Capture or upload photos")
@@ -55,8 +52,3 @@ def add_photos_dialog():
     st.divider()
     if st.button('Done', type='primary', width='stretch'):
         st.rerun()
-
-""""
-what is happening? 
-This code defines a dialog component in Streamlit that allows users to capture photos using their camera or upload photos from their device. The photos are stored in the session state under 'attendance_images'. The dialog has two tabs: one for the camera and one for uploading photos. When a photo is captured or uploaded, it is added to the session state and a toast notification is shown. The user can click 'Done' to close the dialog and return to the main interface. 
-"""
